@@ -1,0 +1,4 @@
+/.* export-ignore
+/_test export-ignore
+/docker export-ignore
+/docker-compose.yml export-ignore

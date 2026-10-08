@@ -1,0 +1,92 @@
+# Development environment for the robot404 plugin.
+#
+# Nothing here writes to the host except the plugin checkout itself (and only
+# `dev fix` does that). The DokuWiki fork and the dev plugin are mounted
+# read-only and seed-dokuwiki.sh copies the fork into the container, so no
+# bind-mount points, caches or test data end up in the fork.
+#
+#   docker compose run --rm test                 # unit tests (args go to phpunit)
+#   docker compose run --rm dev check            # dev plugin CLI: check, fix, ...
+#   docker compose up -d wiki                    # http://127.0.0.1:8404/ (admin/admin)
+#   docker compose run --rm smoke                # HTTP checks against the wiki
+#   docker compose down -v                       # remove containers and the wiki volume
+#
+# Bash does not export UID and GID is not a bash variable; they default to
+# 1000:1000. Otherwise run as `UID=$(id -u) GID=$(id -g) docker compose ...`.
+
+x-php: &php
+  build: ./docker
+  image: robot404-dev
+
+services:
+  test:
+    <<: *php
+    user: "${UID:-1000}:${GID:-1000}"
+    environment:
+      HOME: /tmp
+      XDEBUG_MODE: develop
+    working_dir: /dokuwiki
+    # entrypoint (not command) so `docker compose run --rm test --filter X`
+    # appends to phpunit instead of replacing it
+    entrypoint:
+      - bash
+      - lib/plugins/robot404/docker/seed-dokuwiki.sh
+      - _test/vendor/bin/phpunit
+      - --configuration
+      - _test/phpunit.xml
+      - --do-not-cache-result
+      - --group
+      - plugin_robot404
+    volumes:
+      - ${DOKUWIKI_PATH:-../../dokuwiki}:/dokuwiki-src:ro
+      - .:/dokuwiki/lib/plugins/robot404:ro
+
+  dev:
+    <<: *php
+    user: "${UID:-1000}:${GID:-1000}"
+    environment:
+      HOME: /tmp
+    # the dev plugin only accepts being run from inside lib/plugins/<base>
+    working_dir: /dokuwiki/lib/plugins/robot404
+    entrypoint:
+      - bash
+      - docker/seed-dokuwiki.sh
+      - php
+      - /dokuwiki/bin/plugin.php
+      - dev
+    volumes:
+      - ${DOKUWIKI_PATH:-../../dokuwiki}:/dokuwiki-src:ro
+      - ${DEV_PLUGIN_PATH:-../dokuwiki-plugin-dev}:/dokuwiki/lib/plugins/dev:ro
+      - .:/dokuwiki/lib/plugins/robot404
+
+  wiki:
+    <<: *php
+    entrypoint: ["bash", "/var/www/html/lib/plugins/robot404/docker/wiki.sh"]
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "-o", "/dev/null", "http://localhost/doku.php"]
+      interval: 3s
+      timeout: 5s
+      retries: 30
+    ports:
+      # loopback only: hardcoded admin password
+      - "127.0.0.1:${WIKI_PORT:-8404}:80"
+    volumes:
+      - ${DOKUWIKI_PATH:-../../dokuwiki}:/dokuwiki-src:ro
+      - wiki-root:/var/www/html
+      - .:/var/www/html/lib/plugins/robot404:ro
+
+  smoke:
+    <<: *php
+    depends_on:
+      wiki:
+        condition: service_healthy
+    environment:
+      WIKI_URL: http://wiki
+    entrypoint: ["bash", "/robot404/docker/smoke.sh"]
+    volumes:
+      - .:/robot404:ro
+      # to switch plugin settings through conf/local.protected.php
+      - wiki-root:/wiki
+
+volumes:
+  wiki-root:

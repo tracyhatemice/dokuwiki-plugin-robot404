@@ -1,6 +1,7 @@
 base   robot404
-author Ahmet Sacan
-date   2024-09-20
+author tracyhatemice
+email  tracyhatemice@users.noreply.github.com
+date   2026-10-08
 name   robot404 plugin
-desc   Sends 404 code to webcrawlers on disallowed actions and hidden pages.
-url    https://github.com/ahmetsacan/dokuwiki-plugin-robot404
+desc   Sends 404 to web crawlers on disallowed actions and hidden pages, and to anyone on pages they may not read.
+url    https://github.com/tracyhatemice/dokuwiki-plugin-robot404
