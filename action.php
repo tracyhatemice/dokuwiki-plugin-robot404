@@ -21,6 +21,7 @@ class action_plugin_robot404 extends ActionPlugin
     {
         $controller->register_hook('ACTION_ACT_PREPROCESS', 'BEFORE', $this, 'handleActPreprocess');
         $controller->register_hook('FEED_OPTS_POSTPROCESS', 'BEFORE', $this, 'handleFeedOptsPostprocess');
+        $controller->register_hook('TPL_ACT_RENDER', 'BEFORE', $this, 'handleTplActRender');
         // robots we fail to recognize are at least told not to index what they would have been refused
         $controller->register_hook('ACTION_HEADERS_SEND', 'BEFORE', $this, 'handleHeadersSend');
         $controller->register_hook('TPL_METAHEADER_OUTPUT', 'BEFORE', $this, 'handleMetaheaderOutput');
@@ -30,8 +31,9 @@ class action_plugin_robot404 extends ActionPlugin
      * Refuse robots with a bare 404, and answer everyone else's Permission Denied with a 404
      *
      * Runs again for every action DokuWiki falls back to, e.g. "denied" when the ACL check failed.
-     * Depending on the aclresponse setting, visitors get the Permission Denied page with a 404
-     * status or a bare 404 like robots.
+     * Depending on the aclresponse setting, visitors get the Permission Denied page or the page
+     * DokuWiki shows for missing pages (see handleTplActRender()) with a 404 status, or a bare 404
+     * like robots.
      *
      * @see https://www.dokuwiki.org/devel:events:ACTION_ACT_PREPROCESS
      * @param Event $event Event object, data is the action name
@@ -51,6 +53,27 @@ class action_plugin_robot404 extends ActionPlugin
             http_status(404);
             if ($this->getConf('aclresponse') === 'plain') exit;
         }
+    }
+
+    /**
+     * Show "This topic does not exist yet" instead of the Permission Denied page (aclresponse=notfound)
+     *
+     * The action stays "denied", so nothing that trusts an action like "show" to mean the page may
+     * be read gets to look at it; only the content is replaced, with exactly what DokuWiki prints
+     * for a page that does not exist.
+     *
+     * @see https://www.dokuwiki.org/devel:events:TPL_ACT_RENDER
+     * @param Event $event Event object, data is the action name
+     * @param mixed $param optional parameter passed when event was registered
+     * @return void
+     */
+    public function handleTplActRender(Event $event, $param)
+    {
+        if ($event->data !== 'denied') return;
+        if ($this->getConf('aclresponse') !== 'notfound' || !$this->isAclPage()) return;
+
+        $event->preventDefault();
+        echo p_locale_xhtml('newpage');
     }
 
     /**
@@ -187,9 +210,10 @@ class action_plugin_robot404 extends ActionPlugin
     {
         global $ACT;
 
+        // pages the visitor may not read are left out: they get a 404 already (and aclresponse=notfound
+        // would be given away by a header that real missing pages do not get)
         // a disabled action falls back to "show", so also check the action that was asked for
         return $this->isHiddenPage()
-            || $this->isAclPage()
             || $this->isDisallowedAction(act_clean($ACT))
             || $this->isDisallowedAction($this->requestedAction());
     }

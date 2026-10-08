@@ -12,9 +12,13 @@ A robot gets an empty 404 response for:
 * **Pages it may not read**: pages and namespaces the ACL gives no read access to (option `aclpages`).
 
 With `aclpages` enabled, any other visitor who may not read a page also gets a 404. Setting `aclresponse`
-picks how: by default they still see DokuWiki's "Permission Denied" page with its login form, just with
-status 404, so a private wiki stays easy to log in to; `plain` gives them the same bare 404 as robots
-(logging in then works through `?do=login`).
+picks how:
+
+* `denied` (default): DokuWiki's "Permission Denied" page with its login form, just with status 404, so a
+  private wiki stays easy to log in to.
+* `notfound`: the "This topic does not exist yet" page DokuWiki shows for missing pages, so visitors cannot
+  tell a protected page from a missing one. Turn on DokuWiki's `send404` so real missing pages get a 404, too.
+* `plain`: the same bare 404 as robots (logging in then works through `?do=login`).
 
 Pages that a robot would be refused also get `noindex,nofollow` (robots meta tag and `X-Robots-Tag` header)
 for every visitor, in case a crawler is not recognized.
@@ -35,7 +39,7 @@ All settings are in the Configuration Manager under *Robot404*:
 | `disableactions` | `backlink`, `diff`, `index`, `recent`, `revisions`, `search`, `login`, `edit`, … | Actions disallowed for robots. *XML Syndication* refuses `feed.php` to robots; it is off by default because feed readers often identify like robots (Feedly says `FeedFetcher-Google`). |
 | `hiddenpages`    | on      | Refuse hidden pages to robots. |
 | `aclpages`       | on      | Send 404 for pages and namespaces the visitor may not read. |
-| `aclresponse`    | `denied` | What visitors other than robots get for pages they may not read: `denied` (Permission Denied page, status 404) or `plain` (bare 404). |
+| `aclresponse`    | `denied` | What visitors other than robots get for pages they may not read: `denied`, `notfound` or `plain` (see above). |
 
 To test as a robot, add `?isrobot404=1` to a URL.
 

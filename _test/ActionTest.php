@@ -216,7 +216,33 @@ class ActionTest extends DokuWikiTest
 
         $this->assertEquals(404, $response->getStatusCode());
         $this->assertSame(1, $response->queryHTML('#dw__login')->count(), 'login form is still offered');
-        $this->assertSame('X-Robots-Tag: noindex,nofollow', $response->getHeader('X-Robots-Tag'));
+        $this->assertSame([], $response->getHeader('X-Robots-Tag'), 'the 404 says enough');
+    }
+
+    /**
+     * aclresponse=notfound: the content is exactly what DokuWiki shows for a page that does not exist
+     */
+    public function testUnreadablePageLooksMissingWithNotfound(): void
+    {
+        $config = ['aclresponse' => 'notfound'];
+        $unreadable = $this->request('id=private:page', self::BROWSER, $config);
+        $missing = $this->request('id=wiki:nosuchpage', self::BROWSER, $config);
+
+        $content = $unreadable->queryHTML('div.page')->html();
+        $this->assertStringContainsString('This topic does not exist yet', $content);
+        $this->assertStringNotContainsString('dw__login', $content);
+        $this->assertSame($missing->queryHTML('div.page')->html(), $content);
+    }
+
+    /**
+     * @requires function xdebug_get_headers
+     */
+    public function testUnreadablePageIs404WithNotfound(): void
+    {
+        $response = $this->request('id=private:page', self::BROWSER, ['aclresponse' => 'notfound']);
+
+        $this->assertEquals(404, $response->getStatusCode());
+        $this->assertSame([], $response->getHeader('X-Robots-Tag'));
     }
 
     /**

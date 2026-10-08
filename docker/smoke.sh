@@ -77,6 +77,12 @@ expect 404 "$browser" 'id=private:secret' 'id="dw__login"'
 expect 404 "$browser" 'id=private:' 'id="dw__login"' -L
 expect 200 "$browser" 'id=start&do=login' 'id="dw__login"'
 
+echo "== visitors, aclresponse notfound"
+plugin_conf aclresponse notfound
+expect 404 "$browser" 'id=private:secret' 'This topic does not exist yet'
+expect 404 "$browser" 'id=private:secret' '!dw__login|Permission Denied|Private secret'
+rm -f "$protected"
+
 echo "== visitors, aclresponse plain"
 plugin_conf aclresponse plain
 expect 404 "$browser" 'id=private:secret' '!dw__login|Permission Denied'

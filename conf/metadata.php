@@ -34,4 +34,4 @@ $meta['disableactions'] = [
 ];
 $meta['hiddenpages'] = ['onoff'];
 $meta['aclpages'] = ['onoff'];
-$meta['aclresponse'] = ['multichoice', '_choices' => ['denied', 'plain']];
+$meta['aclresponse'] = ['multichoice', '_choices' => ['denied', 'notfound', 'plain']];

@@ -10,6 +10,7 @@ $lang['hiddenpages'] = 'Should hidden pages (see <code>hidepages</code>) also re
 $lang['aclpages'] = 'Should pages and namespaces the visitor may not read result in 404 (page not found)? Robots get a bare 404; see <code>aclresponse</code> for everyone else.';
 $lang['aclresponse'] = 'With <code>aclpages</code> on, what visitors other than robots get for pages they may not read.';
 $lang['aclresponse_o_denied'] = 'The "Permission Denied" page with its login form, with status 404';
+$lang['aclresponse_o_notfound'] = 'The "This topic does not exist yet" page DokuWiki shows for missing pages, with status 404';
 $lang['aclresponse_o_plain'] = 'A bare 404 like robots get (logging in still works through ?do=login)';
 
 // labels for the choices of disableactions that DokuWiki has no button text for
