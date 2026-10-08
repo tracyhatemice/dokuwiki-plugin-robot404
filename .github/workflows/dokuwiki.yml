@@ -5,6 +5,11 @@ on:
   schedule:
     - cron: '52 9 28 * *'
 
+# As recommended by https://github.com/dokuwiki/github-action#permissions: the default
+# token is read-only, and GitHub refuses to start the run when a called workflow (the
+# autofix job wants contents and pull-requests write) asks for more than the caller
+# grants. Each job still only gets what its own workflow declares.
+permissions: write-all
 
 jobs:
   all:
