@@ -60,6 +60,9 @@ class ActionTest extends DokuWikiTest
     {
         global $conf;
         $conf['plugin']['robot404'] = $config;
+        // the instance handling the events has its settings loaded already, which replacing them above
+        // stripped of the defaults; merge them back in
+        plugin_load('action', 'robot404')->loadConfig();
         $request = new TestRequest();
         $request->setServer('HTTP_USER_AGENT', $agent);
         return $request->get([], '/doku.php?' . $query);
@@ -224,14 +227,19 @@ class ActionTest extends DokuWikiTest
      */
     public function testUnreadablePageLooksMissingWithNotfound(): void
     {
+        saveWikiText('private:existing', '====== Top secret heading ======', 'test');
         $config = ['aclresponse' => 'notfound'];
-        $unreadable = $this->request('id=private:page', self::BROWSER, $config);
         $missing = $this->request('id=wiki:nosuchpage', self::BROWSER, $config);
+        $expected = $missing->queryHTML('div.page')->html();
+        $this->assertStringContainsString('This topic does not exist yet', $expected);
 
-        $content = $unreadable->queryHTML('div.page')->html();
-        $this->assertStringContainsString('This topic does not exist yet', $content);
-        $this->assertStringNotContainsString('dw__login', $content);
-        $this->assertSame($missing->queryHTML('div.page')->html(), $content);
+        foreach (['private:existing', 'private:nosuchpage'] as $id) {
+            $response = $this->request("id=$id", self::BROWSER, $config);
+
+            $this->assertSame($expected, $response->queryHTML('div.page')->html(), $id);
+            $this->assertStringNotContainsString('dw__login', $response->getContent(), $id);
+            $this->assertStringNotContainsString('Top secret', $response->getContent(), $id);
+        }
     }
 
     /**
